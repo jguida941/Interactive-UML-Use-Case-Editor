@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive UML Use Case Diagram Editor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .app-container {
+            display: flex;
+            height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            box-shadow: 2px 0 20px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            z-index: 100;
+        }
+
+        .sidebar-header {
+            padding: 25px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .sidebar-header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .sidebar-header p {
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+
+        .sidebar-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .section {
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #666;
+            margin-bottom: 12px;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px 16px;
+            margin-bottom: 10px;
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.15);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background: linear-gradient(135deg, #5a67d8 0%, #6b42a0 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-danger {
+            background: #ff4757;
+            color: white;
+            border: none;
+        }
+
+        .btn-danger:hover {
+            background: #ff3838;
+        }
+
+        /* Main Canvas */
+        .main-content {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: #f8f9fa;
+            background-image:
+                    linear-gradient(rgba(200, 200, 200, 0.1) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(200, 200, 200, 0.1) 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+
+        #canvas {
+            width: 100%;
+            height: 100%;
+            cursor: grab;
+        }
+
+        #canvas.dragging {
+            cursor: grabbing;
+        }
+
+        /* Floating Toolbar */
+        .toolbar {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: white;
+            border-radius: 12px;
+            padding: 10px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            display: flex;
+            gap: 10px;
+            z-index: 50;
+        }
+
+        .tool-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            background: white;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            font-size: 18px;
+        }
+
+        .tool-btn:hover {
+            background: #f0f0f0;
+            transform: scale(1.1);
+        }
+
+        .tool-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        /* System Title Input */
+        .system-title {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            padding: 12px 24px;
+            border-radius: 30px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            z-index: 50;
+        }
+
+        .system-title input {
+            border: none;
+            outline: none;
+            font-size: 18px;
+            font-weight: 600;
+            text-align: center;
+            min-width: 200px;
+            background: transparent;
+        }
+
+        /* Context Menu */
+        .context-menu {
+            position: absolute;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            padding: 8px;
+            display: none;
+            z-index: 1000;
+            min-width: 150px;
+        }
+
+        .context-menu-item {
+            padding: 8px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s;
+        }
+
+        .context-menu-item:hover {
+            background: #f0f0f0;
+        }
+
+        .context-menu-item.danger {
+            color: #ff4757;
+        }
+
+        /* Modal */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+
+        .modal.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #666;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .modal-buttons button {
+            flex: 1;
+        }
+
+        /* Stats */
+        .stats {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            background: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            font-size: 12px;
+            color: #666;
+            z-index: 50;
+        }
+
+        .stats span {
+            margin-right: 15px;
+        }
+
+        /* SVG Styles */
+        .actor-group {
+            cursor: move;
+        }
+
+        .actor-group.dragging {
+            opacity: 0.7;
+        }
+
+        .use-case {
+            cursor: move;
+        }
+
+        .use-case.dragging {
+            opacity: 0.7;
+        }
+
+        .editable-text {
+            cursor: text;
+        }
+
+        .connection-line {
+            stroke: #666;
+            stroke-width: 2;
+            fill: none;
+            cursor: pointer;
+            transition: stroke 0.3s;
+        }
+
+        .connection-line:hover {
+            stroke: #667eea;
+            stroke-width: 3;
+        }
+
+        .connection-line.include,
+        .connection-line.extend {
+            stroke-dasharray: 5, 5;
+        }
+
+        /* Help Panel */
+        .help-panel {
+            position: absolute;
+            top: 80px;
+            right: 20px;
+            background: white;
+            border-radius: 8px;
+            padding: 15px;
+            max-width: 250px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            display: none;
+            z-index: 50;
+        }
+
+        .help-panel.show {
+            display: block;
+        }
+
+        .help-panel h3 {
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .help-panel p {
+            font-size: 12px;
+            color: #666;
+            line-height: 1.5;
+            margin-bottom: 8px;
+        }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h1>UML Editor</h1>
+            <p>Interactive Use Case Diagram</p>
+        </div>
+        <div class="sidebar-content">
+            <div class="section">
+                <div class="section-title">Add Elements</div>
+                <button class="btn" onclick="openActorModal()">
+                    <span>👤</span> Add Actor
+                </button>
+                <button class="btn" onclick="openUseCaseModal()">
+                    <span>⭕</span> Add Use Case
+                </button>
+                <button class="btn" onclick="toggleConnectionMode()">
+                    <span>🔗</span> Add Connection
+                </button>
+            </div>
+
+            <div class="section">
+                <div class="section-title">Actions</div>
+                <button class="btn btn-primary" onclick="exportSVG()">
+                    <span>💾</span> Export SVG
+                </button>
+                <button class="btn btn-primary" onclick="exportPNG()">
+                    <span>🖼️</span> Export PNG
+                </button>
+                <button class="btn" onclick="saveToJSON()">
+                    <span>📄</span> Save JSON
+                </button>
+                <button class="btn" onclick="loadFromJSON()">
+                    <span>📂</span> Load JSON
+                </button>
+            </div>
+
+            <div class="section">
+                <div class="section-title">View</div>
+                <button class="btn" onclick="zoomIn()">
+                    <span>🔍</span> Zoom In
+                </button>
+                <button class="btn" onclick="zoomOut()">
+                    <span>🔍</span> Zoom Out
+                </button>
+                <button class="btn" onclick="resetView()">
+                    <span>🎯</span> Reset View
+                </button>
+            </div>
+
+            <div class="section">
+                <div class="section-title">Danger Zone</div>
+                <button class="btn btn-danger" onclick="clearDiagram()">
+                    <span>🗑️</span> Clear All
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Canvas Area -->
+    <div class="main-content">
+        <div class="canvas-container">
+            <svg id="canvas">
+                <defs>
+                    <marker id="arrowhead" markerWidth="10" markerHeight="10" refX="10" refY="5" orient="auto">
+                        <polygon points="0 0, 10 5, 0 10" fill="#666" />
+                    </marker>
+                    <marker id="generalization-arrow" markerWidth="10" markerHeight="10" refX="10" refY="5" orient="auto">
+                        <polygon points="0 0, 10 5, 0 10" fill="white" stroke="#666" stroke-width="1" />
+                    </marker>
+                </defs>
+                <g id="connections"></g>
+                <g id="system-boundary"></g>
+                <g id="elements"></g>
+            </svg>
+        </div>
+
+        <!-- System Title -->
+        <div class="system-title">
+            <input type="text" id="systemName" value="System Name" onchange="updateSystemName()">
+        </div>
+
+        <!-- Toolbar -->
+        <div class="toolbar">
+            <button class="tool-btn" onclick="togglePanMode()" title="Pan Mode">
+                <span>✋</span>
+            </button>
+            <button class="tool-btn" onclick="toggleHelp()" title="Help">
+                <span>❓</span>
+            </button>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats">
+            <span>Actors: <strong id="actorCount">0</strong></span>
+            <span>Use Cases: <strong id="useCaseCount">0</strong></span>
+            <span>Connections: <strong id="connectionCount">0</strong></span>
+        </div>
+
+        <!-- Help Panel -->
+        <div class="help-panel" id="helpPanel">
+            <h3>Quick Help</h3>
+            <p><strong>Double-click</strong> any text to edit</p>
+            <p><strong>Drag</strong> elements to move them</p>
+            <p><strong>Right-click</strong> for context menu</p>
+            <p><strong>Connection Mode:</strong> Click two elements to connect</p>
+            <p><strong>Delete:</strong> Select and press Delete key</p>
+        </div>
+    </div>
+</div>
+
+<!-- Context Menu -->
+<div class="context-menu" id="contextMenu">
+    <div class="context-menu-item" onclick="editElement()">Edit</div>
+    <div class="context-menu-item" onclick="duplicateElement()">Duplicate</div>
+    <div class="context-menu-item danger" onclick="deleteElement()">Delete</div>
+</div>
+
+<!-- Actor Modal -->
+<div class="modal" id="actorModal">
+    <div class="modal-content">
+        <h2 class="modal-title">Add Actor</h2>
+        <div class="form-group">
+            <label>Actor Name</label>
+            <input type="text" id="actorName" placeholder="e.g., Customer">
+        </div>
+        <div class="form-group">
+            <label>Type</label>
+            <select id="actorType">
+                <option value="primary">Primary (Left)</option>
+                <option value="secondary">Secondary (Right)</option>
+            </select>
+        </div>
+        <div class="modal-buttons">
+            <button class="btn" onclick="closeModal('actorModal')">Cancel</button>
+            <button class="btn btn-primary" onclick="addActor()">Add Actor</button>
+        </div>
+    </div>
+</div>
+
+<!-- Use Case Modal -->
+<div class="modal" id="useCaseModal">
+    <div class="modal-content">
+        <h2 class="modal-title">Add Use Case</h2>
+        <div class="form-group">
+            <label>Use Case Name</label>
+            <input type="text" id="useCaseName" placeholder="e.g., Login">
+        </div>
+        <div class="form-group">
+            <label>Description (Optional)</label>
+            <input type="text" id="useCaseDescription" placeholder="Brief description">
+        </div>
+        <div class="modal-buttons">
+            <button class="btn" onclick="closeModal('useCaseModal')">Cancel</button>
+            <button class="btn btn-primary" onclick="addUseCase()">Add Use Case</button>
+        </div>
+    </div>
+</div>
+
+<!-- Connection Modal -->
+<div class="modal" id="connectionModal">
+    <div class="modal-content">
+        <h2 class="modal-title">Connection Type</h2>
+        <div class="form-group">
+            <label>Relationship Type</label>
+            <select id="connectionType">
+                <option value="association">Association</option>
+                <option value="include">Include</option>
+                <option value="extend">Extend</option>
+                <option value="generalization">Generalization</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Label (Optional)</label>
+            <input type="text" id="connectionLabel" placeholder="e.g., <<include>>">
+        </div>
+        <div class="modal-buttons">
+            <button class="btn" onclick="closeModal('connectionModal')">Cancel</button>
+            <button class="btn btn-primary" onclick="createConnection()">Create</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // State management
+    let actors = [];
+    let useCases = [];
+    let connections = [];
+    let selectedElement = null;
+    let connectionMode = false;
+    let firstConnectionElement = null;
+    let draggedElement = null;
+    let isPanning = false;
+    let panStart = { x: 0, y: 0 };
+    let viewBox = { x: 0, y: 0, width: 1200, height: 800 };
+    let zoom = 1;
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', () => {
+        initCanvas();
+        updateStats();
+        drawSystemBoundary();
+
+        // Add sample data for demonstration
+        addSampleData();
+    });
+
+    function initCanvas() {
+        const canvas = document.getElementById('canvas');
+        canvas.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`);
+
+        // Pan functionality
+        canvas.addEventListener('mousedown', startPan);
+        canvas.addEventListener('mousemove', pan);
+        canvas.addEventListener('mouseup', endPan);
+        canvas.addEventListener('mouseleave', endPan);
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Delete' && selectedElement) {
+                deleteElement();
+            }
+        });
+    }
+
+    function drawSystemBoundary() {
+        const boundary = document.getElementById('system-boundary');
+        boundary.innerHTML = `
+                <rect x="200" y="50" width="800" height="700"
+                      fill="none" stroke="#333" stroke-width="2"
+                      rx="10" stroke-dasharray="10,5" opacity="0.3"/>
+            `;
+    }
+
+    function addSampleData() {
+        // Add sample actors
+        actors = [
+            { id: 'actor1', name: 'Customer', type: 'primary', x: 100, y: 200 },
+            { id: 'actor2', name: 'Admin', type: 'primary', x: 100, y: 400 },
+            { id: 'actor3', name: 'Payment System', type: 'secondary', x: 1100, y: 300 }
+        ];
+
+        // Add sample use cases
+        useCases = [
+            { id: 'uc1', name: 'Login', description: 'User authentication', x: 400, y: 200 },
+            { id: 'uc2', name: 'Browse Products', description: 'View product catalog', x: 600, y: 200 },
+            { id: 'uc3', name: 'Make Purchase', description: 'Complete transaction', x: 800, y: 200 },
+            { id: 'uc4', name: 'Manage Users', description: 'Admin functionality', x: 600, y: 400 }
+        ];
+
+        // Add sample connections
+        connections = [
+            { id: 'conn1', source: 'actor1', target: 'uc1', type: 'association' },
+            { id: 'conn2', source: 'actor1', target: 'uc2', type: 'association' },
+            { id: 'conn3', source: 'uc3', target: 'actor3', type: 'association' },
+            { id: 'conn4', source: 'actor2', target: 'uc4', type: 'association' }
+        ];
+
+        redrawDiagram();
+    }
+
+    function redrawDiagram() {
+        const elementsGroup = document.getElementById('elements');
+        const connectionsGroup = document.getElementById('connections');
+
+        // Clear existing
+        elementsGroup.innerHTML = '';
+        connectionsGroup.innerHTML = '';
+
+        // Draw connections first (so they appear behind elements)
+        connections.forEach(conn => drawConnection(conn));
+
+        // Draw actors
+        actors.forEach(actor => drawActor(actor));
+
+        // Draw use cases
+        useCases.forEach(uc => drawUseCase(uc));
+
+        updateStats();
+    }
+
+    function drawActor(actor) {
+        const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        group.setAttribute('class', 'actor-group');
+        group.setAttribute('id', actor.id);
+        group.setAttribute('transform', `translate(${actor.x}, ${actor.y})`);
+
+        // Stick figure with better styling
+        group.innerHTML = `
+                <circle cx="0" cy="-20" r="15" fill="white" stroke="#333" stroke-width="2"/>
+                <line x1="0" y1="-5" x2="0" y2="25" stroke="#333" stroke-width="3" stroke-linecap="round"/>
+                <line x1="-20" y1="5" x2="20" y2="5" stroke="#333" stroke-width="3" stroke-linecap="round"/>
+                <line x1="0" y1="25" x2="-15" y2="50" stroke="#333" stroke-width="3" stroke-linecap="round"/>
+                <line x1="0" y1="25" x2="15" y2="50" stroke="#333" stroke-width="3" stroke-linecap="round"/>
+                <text x="0" y="70" text-anchor="middle" font-size="14" font-weight="500"
+                      class="editable-text" data-id="${actor.id}" data-type="actor">${actor.name}</text>
+            `;
+
+        // Add event listeners
+        group.addEventListener('mousedown', (e) => startDrag(e, actor));
+        group.addEventListener('contextmenu', (e) => showContextMenu(e, actor));
+        group.addEventListener('click', (e) => handleElementClick(actor));
+
+        // Make text editable
+        const text = group.querySelector('.editable-text');
+        text.addEventListener('dblclick', (e) => makeEditable(e, actor));
+
+        document.getElementById('elements').appendChild(group);
+    }
+
+    function drawUseCase(useCase) {
+        const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        group.setAttribute('class', 'use-case');
+        group.setAttribute('id', useCase.id);
+        group.setAttribute('transform', `translate(${useCase.x}, ${useCase.y})`);
+
+        group.innerHTML = `
+                <ellipse cx="0" cy="0" rx="80" ry="40" fill="white" stroke="#333" stroke-width="2"/>
+                <text x="0" y="5" text-anchor="middle" font-size="14" font-weight="500"
+                      class="editable-text" data-id="${useCase.id}" data-type="usecase">${useCase.name}</text>
+            `;
+
+        // Add event listeners
+        group.addEventListener('mousedown', (e) => startDrag(e, useCase));
+        group.addEventListener('contextmenu', (e) => showContextMenu(e, useCase));
+        group.addEventListener('click', (e) => handleElementClick(useCase));
+
+        // Make text editable
+        const text = group.querySelector('.editable-text');
+        text.addEventListener('dblclick', (e) => makeEditable(e, useCase));
+
+        document.getElementById('elements').appendChild(group);
+    }
+
+    function drawConnection(conn) {
+        const source = [...actors, ...useCases].find(e => e.id === conn.source);
+        const target = [...actors, ...useCases].find(e => e.id === conn.target);
+
+        if (!source || !target) return;
+
+        const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        group.setAttribute('id', conn.id);
+
+        const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        line.setAttribute('x1', source.x);
+        line.setAttribute('y1', source.y);
+        line.setAttribute('x2', target.x);
+        line.setAttribute('y2', target.y);
+        line.setAttribute('class', `connection-line ${conn.type}`);
+
+        if (conn.type === 'include' || conn.type === 'extend') {
+            line.setAttribute('marker-end', 'url(#arrowhead)');
+        } else if (conn.type === 'generalization') {
+            line.setAttribute('marker-end', 'url(#generalization-arrow)');
+        }
+
+        group.appendChild(line);
+
+        // Add label if exists
+        if (conn.label || conn.type === 'include' || conn.type === 'extend') {
+            const midX = (source.x + target.x) / 2;
+            const midY = (source.y + target.y) / 2;
+
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', midX);
+            text.setAttribute('y', midY - 5);
+            text.setAttribute('text-anchor', 'middle');
+            text.setAttribute('font-size', '12');
+            text.setAttribute('fill', '#666');
+            text.textContent = conn.label || (conn.type !== 'association' ? `<<${conn.type}>>` : '');
+
+            group.appendChild(text);
+        }
+
+        group.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            if (confirm('Delete this connection?')) {
+                connections = connections.filter(c => c.id !== conn.id);
+                redrawDiagram();
+            }
+        });
+
+        document.getElementById('connections').appendChild(group);
+    }
+
+    function makeEditable(e, element) {
+        e.stopPropagation();
+        const text = e.target;
+        const currentText = text.textContent;
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.value = currentText;
+        input.style.position = 'fixed';
+        input.style.left = e.clientX - 50 + 'px';
+        input.style.top = e.clientY - 10 + 'px';
+        input.style.zIndex = '3000';
+        input.style.padding = '5px';
+        input.style.border = '2px solid #667eea';
+        input.style.borderRadius = '4px';
+        input.style.background = 'white';
+
+        document.body.appendChild(input);
+        input.focus();
+        input.select();
+
+        const save = () => {
+            const newText = input.value.trim();
+            if (newText) {
+                element.name = newText;
+                text.textContent = newText;
+            }
+            document.body.removeChild(input);
+        };
+
+        input.addEventListener('blur', save);
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') save();
+            if (e.key === 'Escape') document.body.removeChild(input);
+        });
+    }
+
+    function startDrag(e, element) {
+        if (e.button !== 0) return; // Only left click
+        e.stopPropagation();
+        draggedElement = element;
+
+        const svg = document.getElementById('canvas');
+        const pt = svg.createSVGPoint();
+        pt.x = e.clientX;
+        pt.y = e.clientY;
+        const svgP = pt.matrixTransform(svg.getScreenCTM().inverse());
+
+        draggedElement.offsetX = svgP.x - element.x;
+        draggedElement.offsetY = svgP.y - element.y;
+
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', endDrag);
+    }
+
+    function drag(e) {
+        if (!draggedElement) return;
+
+        const svg = document.getElementById('canvas');
+        const pt = svg.createSVGPoint();
+        pt.x = e.clientX;
+        pt.y = e.clientY;
+        const svgP = pt.matrixTransform(svg.getScreenCTM().inverse());
+
+        draggedElement.x = svgP.x - draggedElement.offsetX;
+        draggedElement.y = svgP.y - draggedElement.offsetY;
+
+        redrawDiagram();
+    }
+
+    function endDrag() {
+        draggedElement = null;
+        document.removeEventListener('mousemove', drag);
+        document.removeEventListener('mouseup', endDrag);
+    }
+
+    function handleElementClick(element) {
+        if (connectionMode) {
+            if (!firstConnectionElement) {
+                firstConnectionElement = element;
+                alert(`First element selected: ${element.name}. Now click the second element.`);
+            } else {
+                openConnectionModal(firstConnectionElement, element);
+                connectionMode = false;
+                firstConnectionElement = null;
+            }
+        }
+    }
+
+    function openConnectionModal(source, target) {
+        document.getElementById('connectionModal').classList.add('show');
+        window.tempConnection = { source: source.id, target: target.id };
+    }
+
+    function createConnection() {
+        const type = document.getElementById('connectionType').value;
+        const label = document.getElementById('connectionLabel').value;
+
+        const conn = {
+            id: 'conn' + Date.now(),
+            source: window.tempConnection.source,
+            target: window.tempConnection.target,
+            type: type,
+            label: label
+        };
+
+        connections.push(conn);
+        redrawDiagram();
+        closeModal('connectionModal');
+    }
+
+    function showContextMenu(e, element) {
+        e.preventDefault();
+        const menu = document.getElementById('contextMenu');
+        menu.style.display = 'block';
+        menu.style.left = e.clientX + 'px';
+        menu.style.top = e.clientY + 'px';
+        selectedElement = element;
+
+        document.addEventListener('click', hideContextMenu);
+    }
+
+    function hideContextMenu() {
+        document.getElementById('contextMenu').style.display = 'none';
+        document.removeEventListener('click', hideContextMenu);
+    }
+
+    function deleteElement() {
+        if (!selectedElement) return;
+
+        // Remove from appropriate array
+        actors = actors.filter(a => a.id !== selectedElement.id);
+        useCases = useCases.filter(uc => uc.id !== selectedElement.id);
+
+        // Remove related connections
+        connections = connections.filter(c =>
+            c.source !== selectedElement.id && c.target !== selectedElement.id
+        );
+
+        selectedElement = null;
+        redrawDiagram();
+        hideContextMenu();
+    }
+
+    function duplicateElement() {
+        if (!selectedElement) return;
+
+        const newElement = {
+            ...selectedElement,
+            id: selectedElement.id + '_copy_' + Date.now(),
+            name: selectedElement.name + ' (Copy)',
+            x: selectedElement.x + 50,
+            y: selectedElement.y + 50
+        };
+
+        if (actors.includes(selectedElement)) {
+            actors.push(newElement);
+        } else {
+            useCases.push(newElement);
+        }
+
+        redrawDiagram();
+        hideContextMenu();
+    }
+
+    function editElement() {
+        // This would open an edit modal - simplified for now
+        const newName = prompt('Enter new name:', selectedElement.name);
+        if (newName) {
+            selectedElement.name = newName;
+            redrawDiagram();
+        }
+        hideContextMenu();
+    }
+
+    // Modal functions
+    function openActorModal() {
+        document.getElementById('actorModal').classList.add('show');
+    }
+
+    function openUseCaseModal() {
+        document.getElementById('useCaseModal').classList.add('show');
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove('show');
+    }
+
+    function addActor() {
+        const name = document.getElementById('actorName').value.trim();
+        const type = document.getElementById('actorType').value;
+
+        if (!name) {
+            alert('Please enter an actor name');
+            return;
+        }
+
+        const actor = {
+            id: 'actor' + Date.now(),
+            name: name,
+            type: type,
+            x: type === 'primary' ? 100 : 1100,
+            y: 100 + (actors.filter(a => a.type === type).length * 150)
+        };
+
+        actors.push(actor);
+        redrawDiagram();
+        closeModal('actorModal');
+
+        // Clear form
+        document.getElementById('actorName').value = '';
+    }
+
+    function addUseCase() {
+        const name = document.getElementById('useCaseName').value.trim();
+        const description = document.getElementById('useCaseDescription').value.trim();
+
+        if (!name) {
+            alert('Please enter a use case name');
+            return;
+        }
+
+        const useCase = {
+            id: 'uc' + Date.now(),
+            name: name,
+            description: description,
+            x: 400 + (useCases.length % 3) * 200,
+            y: 150 + Math.floor(useCases.length / 3) * 150
+        };
+
+        useCases.push(useCase);
+        redrawDiagram();
+        closeModal('useCaseModal');
+
+        // Clear form
+        document.getElementById('useCaseName').value = '';
+        document.getElementById('useCaseDescription').value = '';
+    }
+
+    function toggleConnectionMode() {
+        connectionMode = !connectionMode;
+        firstConnectionElement = null;
+
+        if (connectionMode) {
+            alert('Connection mode enabled. Click two elements to connect them.');
+            document.getElementById('canvas').style.cursor = 'crosshair';
+        } else {
+            document.getElementById('canvas').style.cursor = 'grab';
+        }
+    }
+
+    // Pan functions
+    function startPan(e) {
+        if (e.target === document.getElementById('canvas')) {
+            isPanning = true;
+            panStart = { x: e.clientX, y: e.clientY };
+            document.getElementById('canvas').classList.add('dragging');
+        }
+    }
+
+    function pan(e) {
+        if (!isPanning) return;
+
+        const dx = e.clientX - panStart.x;
+        const dy = e.clientY - panStart.y;
+
+        viewBox.x -= dx / zoom;
+        viewBox.y -= dy / zoom;
+
+        document.getElementById('canvas').setAttribute('viewBox',
+            `${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`);
+
+        panStart = { x: e.clientX, y: e.clientY };
+    }
+
+    function endPan() {
+        isPanning = false;
+        document.getElementById('canvas').classList.remove('dragging');
+    }
+
+    function togglePanMode() {
+        const btn = event.target.closest('.tool-btn');
+        btn.classList.toggle('active');
+    }
+
+    // Zoom functions
+    function zoomIn() {
+        zoom *= 1.2;
+        viewBox.width = 1200 / zoom;
+        viewBox.height = 800 / zoom;
+        document.getElementById('canvas').setAttribute('viewBox',
+            `${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`);
+    }
+
+    function zoomOut() {
+        zoom *= 0.8;
+        viewBox.width = 1200 / zoom;
+        viewBox.height = 800 / zoom;
+        document.getElementById('canvas').setAttribute('viewBox',
+            `${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`);
+    }
+
+    function resetView() {
+        zoom = 1;
+        viewBox = { x: 0, y: 0, width: 1200, height: 800 };
+        document.getElementById('canvas').setAttribute('viewBox',
+            `${viewBox.x} ${viewBox.y} ${viewBox.width} ${viewBox.height}`);
+    }
+
+    // Export functions
+    function exportSVG() {
+        const svg = document.getElementById('canvas').cloneNode(true);
+        const svgData = new XMLSerializer().serializeToString(svg);
+        const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+        const svgUrl = URL.createObjectURL(svgBlob);
+
+        const link = document.createElement('a');
+        link.href = svgUrl;
+        link.download = 'uml_diagram.svg';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    function exportPNG() {
+        const svg = document.getElementById('canvas');
+        const svgData = new XMLSerializer().serializeToString(svg);
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+
+        canvas.width = 1200;
+        canvas.height = 800;
+
+        img.onload = function() {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0);
+
+            canvas.toBlob(function(blob) {
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = 'uml_diagram.png';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        };
+
+        img.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgData)));
+    }
+
+    function saveToJSON() {
+        const data = {
+            systemName: document.getElementById('systemName').value,
+            actors: actors,
+            useCases: useCases,
+            connections: connections
+        };
+
+        const json = JSON.stringify(data, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'uml_diagram.json';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    function loadFromJSON() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+
+            reader.onload = (event) => {
+                try {
+                    const data = JSON.parse(event.target.result);
+                    document.getElementById('systemName').value = data.systemName || 'System';
+                    actors = data.actors || [];
+                    useCases = data.useCases || [];
+                    connections = data.connections || [];
+                    redrawDiagram();
+                } catch (error) {
+                    alert('Invalid JSON file');
+                }
+            };
+
+            reader.readAsText(file);
+        };
+
+        input.click();
+    }
+
+    function clearDiagram() {
+        if (confirm('Are you sure you want to clear the entire diagram?')) {
+            actors = [];
+            useCases = [];
+            connections = [];
+            redrawDiagram();
+        }
+    }
+
+    function updateSystemName() {
+        // Just update the value - it's already bound to the input
+    }
+
+    function updateStats() {
+        document.getElementById('actorCount').textContent = actors.length;
+        document.getElementById('useCaseCount').textContent = useCases.length;
+        document.getElementById('connectionCount').textContent = connections.length;
+    }
+
+    function toggleHelp() {
+        document.getElementById('helpPanel').classList.toggle('show');
+    }
+</script>
+</body>
+</html>
