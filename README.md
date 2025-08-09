@@ -1,11 +1,22 @@
 # UML Use Case Diagram Editor (Interactive, SVG-Based)
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-ff6a00?style=flat-square&labelColor=0a0a0a)](LICENSE)
+![App](https://img.shields.io/badge/App-Single--file%20HTML%2FJS%2FCSS-ff6a00?style=flat-square&labelColor=0a0a0a)
+![Build](https://img.shields.io/badge/Build-None%20required-ff6a00?style=flat-square&labelColor=0a0a0a)
+![Deps](https://img.shields.io/badge/Dependencies-0-ff6a00?style=flat-square&labelColor=0a0a0a)
+![Runtime](https://img.shields.io/badge/Runtime-Browser-ff6a00?style=flat-square&labelColor=0a0a0a)
+![Offline](https://img.shields.io/badge/Offline-Ready-ff6a00?style=flat-square&labelColor=0a0a0a)
+![Export](https://img.shields.io/badge/Export-SVG%20%7C%20PNG-ff6a00?style=flat-square&labelColor=0a0a0a)
+![Persistence](https://img.shields.io/badge/Save%2FLoad-JSON-ff6a00?style=flat-square&labelColor=0a0a0a)
+![Relations](https://img.shields.io/badge/Relations-Association%20%7C%20Include%20%7C%20Extend%20%7C%20Generalization-ff6a00?style=flat-square&labelColor=0a0a0a)
+![Canvas](https://img.shields.io/badge/Canvas-Pan%20%7C%20Zoom%20%7C%20Reset-ff6a00?style=flat-square&labelColor=0a0a0a)
+![Editing](https://img.shields.io/badge/Editing-Drag%20%26%20Drop%20%7C%20Inline%20Text%20%7C%20Context%20Menu-ff6a00?style=flat-square&labelColor=0a0a0a)
+
 A lightweight, single-file web app for creating **UML Use Case diagrams** — no build step, no backend.  
 Add actors and use cases, drag to position, connect with UML relationships (association, include, extend, generalization), and **export to SVG/PNG** or **save/load JSON**.
 
 > **Live-ready:** Open `index.html` in any modern browser and you’re building.
 > I also have automated gant chart editors etc. This is a simple version I built for UML case diagrams cause lucid chart keeps wanting me to "pay for shapes"
-
 
 ## Features
 
